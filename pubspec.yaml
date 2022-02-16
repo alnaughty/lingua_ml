@@ -19,6 +19,8 @@ dependencies:
   camera: ^0.9.4+5
   fluttertoast: ^8.0.8
   page_transition: ^2.0.4
+  rxdart: ^0.27.3
+  flutter_tts: ^3.3.3
 
 dev_dependencies:
   flutter_test:
