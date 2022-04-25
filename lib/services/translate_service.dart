@@ -1,4 +1,5 @@
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 
 class TranslateService {
   Future<String> init(String text,

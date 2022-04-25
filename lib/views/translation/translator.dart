@@ -7,10 +7,12 @@ class TranslationPage extends StatefulWidget {
     required this.controller,
     required this.translatedController,
     required this.onTextChangedToTranslate,
+    this.disableTextEditing = false,
   }) : super(key: key);
   final TextEditingController controller;
   final TextEditingController translatedController;
   final Function(String)? onTextChangedToTranslate;
+  final bool disableTextEditing;
   @override
   State<TranslationPage> createState() => _TranslationPageState();
 }
@@ -48,6 +50,7 @@ class _TranslationPageState extends State<TranslationPage> {
               child: TextField(
                 minLines: 4,
                 maxLines: 6,
+                enabled: !widget.disableTextEditing,
                 controller: widget.controller,
                 onChanged: widget.onTextChangedToTranslate,
                 decoration: const InputDecoration(

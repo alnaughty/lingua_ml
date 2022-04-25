@@ -127,6 +127,11 @@ class _CameraViewState extends State<CameraView> {
       if ((offset.dy >= tr.dy && offset.dy <= bl.dy) &&
           (offset.dx >= bl.dx && offset.dx <= tr.dx)) {
         print(textBlock.text);
+        Navigator.pushNamed(
+          context,
+          "/live_stream_translate_page",
+          arguments: textBlock.text,
+        );
         break;
       }
     }

@@ -15,10 +15,11 @@ class LandingPage extends StatefulWidget {
   _LnadingPageState createState() => _LnadingPageState();
 }
 
-class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
+class _LnadingPageState extends State<LandingPage> {
+  final LandingPageHelper _helper = LandingPageHelper.instance;
   Future _speak(String languageCode, String text) async {
-    await flutterTts.setLanguage(languageCode);
-    var result = await flutterTts.speak(text);
+    await _helper.flutterTts.setLanguage(languageCode);
+    var result = await _helper.flutterTts.speak(text);
     // if (result == 1) setState(() => ttsState = TtsState.playing);
   }
 
@@ -29,16 +30,16 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
     setState(() {
       isTranslating = true;
     });
-    languageModelService.checkIsDownloaded(chosenLanguageTranslateTo.code,
-        isChecking: (bool f) async {
+    _helper.languageModelService.checkIsDownloaded(
+        _helper.chosenLanguageTranslateTo.code, isChecking: (bool f) async {
       setState(() {
         isDownloadingModel = !f;
       });
     });
 
-    String x = await translateIt();
+    String x = await _helper.translateIt();
     setState(() {
-      translatedController.text = x;
+      _helper.translatedController.text = x;
       isTranslating = false;
     });
   }
@@ -46,15 +47,15 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
   void clearData() {
     setState(() {
       imageFile = null;
-      controller.clear();
-      translatedController.clear();
+      _helper.controller.clear();
+      _helper.translatedController.clear();
     });
   }
 
   @override
   void initState() {
     print("INIT");
-    debouncer.obj.listen((String text) async {
+    _helper.debouncer.obj.listen((String text) async {
       await ttranslate();
     });
     // searchOnChange.debounceTime(Duration(seconds: 1)).listen((queryString) {});
@@ -85,8 +86,8 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                     context,
                     "/text_detector_v2",
                     arguments: <LanguageModel>[
-                      chosenLanguageTranslateFrom,
-                      chosenLanguageTranslateTo,
+                      _helper.chosenLanguageTranslateFrom,
+                      _helper.chosenLanguageTranslateTo,
                     ],
                   );
                 } else {
@@ -102,9 +103,9 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
         body: Stack(
           children: [
             Scrollbar(
-              controller: scrollController,
+              controller: _helper.scrollController,
               child: ListView(
-                controller: scrollController,
+                controller: _helper.scrollController,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -126,8 +127,8 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<LanguageModel>(
                                 isExpanded: true,
-                                value: chosenLanguageTranslateFrom,
-                                items: dropdownMenuItems
+                                value: _helper.chosenLanguageTranslateFrom,
+                                items: _helper.dropdownMenuItems
                                     .map(
                                       (LanguageModel e) =>
                                           DropdownMenuItem<LanguageModel>(
@@ -144,7 +145,8 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                                 onChanged: (val) async {
                                   if (val != null) {
                                     setState(
-                                      () => chosenLanguageTranslateFrom = val,
+                                      () => _helper
+                                          .chosenLanguageTranslateFrom = val,
                                     );
                                     await ttranslate();
                                     // searchOnChange.add(val);
@@ -157,14 +159,15 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                         IconButton(
                           onPressed: () async {
                             final LanguageModel _temp =
-                                chosenLanguageTranslateFrom;
-                            final String _tempText = controller.text;
+                                _helper.chosenLanguageTranslateFrom;
+                            final String _tempText = _helper.controller.text;
                             setState(() {
-                              chosenLanguageTranslateFrom =
-                                  chosenLanguageTranslateTo;
-                              chosenLanguageTranslateTo = _temp;
-                              controller.text = translatedController.text;
-                              translatedController.text = _tempText;
+                              _helper.chosenLanguageTranslateFrom =
+                                  _helper.chosenLanguageTranslateTo;
+                              _helper.chosenLanguageTranslateTo = _temp;
+                              _helper.controller.text =
+                                  _helper.translatedController.text;
+                              _helper.translatedController.text = _tempText;
                             });
                             await ttranslate();
                           },
@@ -182,8 +185,8 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<LanguageModel>(
                                 isExpanded: true,
-                                value: chosenLanguageTranslateTo,
-                                items: dropdownMenuItems
+                                value: _helper.chosenLanguageTranslateTo,
+                                items: _helper.dropdownMenuItems
                                     .map(
                                       (LanguageModel e) =>
                                           DropdownMenuItem<LanguageModel>(
@@ -200,7 +203,8 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                                 onChanged: (val) async {
                                   if (val != null) {
                                     setState(
-                                      () => chosenLanguageTranslateTo = val,
+                                      () => _helper.chosenLanguageTranslateTo =
+                                          val,
                                     );
                                     await ttranslate();
                                   }
@@ -216,13 +220,13 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                     onPickFile: (File pickedFil) =>
                         setState(() => imageFile = pickedFil),
                     imageFile: imageFile,
-                    toTranslate: chosenLanguageTranslateTo,
-                    fromTranslate: chosenLanguageTranslateFrom,
+                    toTranslate: _helper.chosenLanguageTranslateTo,
+                    fromTranslate: _helper.chosenLanguageTranslateFrom,
                     recognisedText: (RecognisedText? texts) async {
                       if (texts != null) {
                         setState(() {
-                          controller.text =
-                              translationService.populateFirst(texts.blocks);
+                          _helper.controller.text = _helper.translationService
+                              .populateFirst(texts.blocks);
                         });
                         await ttranslate();
                         // String x = await translateIt();
@@ -236,10 +240,10 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                     },
                   ),
                   TranslationPage(
-                    controller: controller,
-                    translatedController: translatedController,
+                    controller: _helper.controller,
+                    translatedController: _helper.translatedController,
                     onTextChangedToTranslate: (text) {
-                      debouncer.update(text);
+                      _helper.debouncer.update(text);
                     },
                     // onPressedSpeak: () {},
                   ),
@@ -262,11 +266,11 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                     : () async {
                         await ttranslate();
                       },
-                onPressedSpeak: translatedController.text.isEmpty
+                onPressedSpeak: _helper.translatedController.text.isEmpty
                     ? null
                     : () async {
                         if (Platform.isIOS) {
-                          await flutterTts.setIosAudioCategory(
+                          await _helper.flutterTts.setIosAudioCategory(
                               IosTextToSpeechAudioCategory.ambient,
                               [
                                 IosTextToSpeechAudioCategoryOptions
@@ -279,7 +283,7 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                               IosTextToSpeechAudioMode.voicePrompt);
                         }
                         String code = "en-US";
-                        switch (chosenLanguageTranslateTo.code) {
+                        switch (_helper.chosenLanguageTranslateTo.code) {
                           case "es":
                             code = "es-ES";
                             break;
@@ -306,10 +310,10 @@ class _LnadingPageState extends State<LandingPage> with LandingPageHelper {
                           setState(() {
                             isPlaying = true;
                           });
-                          await flutterTts.awaitSpeakCompletion(true);
-                          await _speak(code, translatedController.text);
+                          await _helper.flutterTts.awaitSpeakCompletion(true);
+                          await _speak(code, _helper.translatedController.text);
                         } else {
-                          flutterTts.stop();
+                          _helper.flutterTts.stop();
                           setState(() {
                             isPlaying = false;
                           });

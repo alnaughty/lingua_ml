@@ -9,6 +9,9 @@ import 'package:lingua_ml/services/language_model_service.dart';
 import 'package:lingua_ml/services/translate_service.dart';
 
 class LandingPageHelper {
+  LandingPageHelper._singleton();
+  static final LandingPageHelper _instance = LandingPageHelper._singleton();
+  static LandingPageHelper get instance => _instance;
   // final BehaviorSubject<String> searchOnChange = BehaviorSubject<String>();
   final FlutterTts flutterTts = FlutterTts();
   final Debouncer debouncer = Debouncer.instance;

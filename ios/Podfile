@@ -30,16 +30,15 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
-  pod 'Firebase'
-  pod 'Firebase/MLVision', '6.25.0'
-# If using an on-device API:
-pod 'Firebase/MLVisionTextModel', '6.25.0'
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
-
 post_install do |installer|
+  pod 'Firebase'
+  pod 'GoogleMLKit/TextRecognition','2.2.0'
+  pod 'GoogleMLKit/Translate', '2.6.0'
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+  
   end
   
 end

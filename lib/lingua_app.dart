@@ -4,6 +4,7 @@ import 'package:lingua_ml/models/language_model.dart';
 import 'package:lingua_ml/views/detectors/vsion_detector_views/text_detector_view.dart';
 import 'package:lingua_ml/views/detectors/vsion_detector_views/text_detectorv2_view.dart';
 import 'package:lingua_ml/views/landing_page.dart';
+import 'package:lingua_ml/views/live_stream_translate_page.dart';
 import 'package:lingua_ml/views/tutorial_page.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -55,6 +56,16 @@ class LinguaApp extends StatelessWidget {
           case "/text_detector":
             return PageTransition(
               child: const TextDetectorView(),
+              type: PageTransitionType.fade,
+              duration: const Duration(milliseconds: 500),
+              reverseDuration: const Duration(milliseconds: 500),
+            );
+          case "/live_stream_translate_page":
+            final String toTranslate = settings.arguments as String;
+            return PageTransition(
+              child: LiveStreamTranslatePage(
+                toTranslate: toTranslate,
+              ),
               type: PageTransitionType.fade,
               duration: const Duration(milliseconds: 500),
               reverseDuration: const Duration(milliseconds: 500),
