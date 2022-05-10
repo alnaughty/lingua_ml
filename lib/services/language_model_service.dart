@@ -12,12 +12,16 @@ class LanguageModelService {
   void checkIsDownloaded(String code,
       {required ValueChanged<bool> isChecking}) async {
     print("Checking");
-    await isModelDownloaded(code, (f) {
+    return await isModelDownloaded(code, (f) {
       isChecking(!f);
     });
     // await isModelDownloaded(widget.toModel.code, (f) {
     //   setState(() => isChecking2 = f);
     // });
+  }
+
+  Future<bool> returnableChecker(String code) async {
+    return await _languageModelManager.isModelDownloaded(code);
   }
 
   Future<void> isModelDownloaded(

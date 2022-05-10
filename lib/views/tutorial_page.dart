@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lingua_ml/main.dart';
 import 'package:lingua_ml/models/tutorial_model.dart';
 import 'package:lingua_ml/views/tutorial_viewer.dart';
 
@@ -106,8 +107,10 @@ class _TutorialPageState extends State<TutorialPage> {
             top: 10,
             right: 10,
             child: TextButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, "/landing_page"),
+              onPressed: () {
+                cacher.nowOld();
+                Navigator.pushReplacementNamed(context, "/landing_page");
+              },
               child: Text(
                 _currentPage < TutorialPage._cnt.length - 1
                     ? "Skip"

@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:lingua_ml/helper/landing_page_helper.dart';
 import 'package:lingua_ml/models/language_model.dart';
+import 'package:lingua_ml/services/speechtt_service.dart';
 import 'package:lingua_ml/views/image_detector/image_pick_from_file.dart';
 import 'package:lingua_ml/views/image_detector/side_nav_options.dart';
+import 'package:lingua_ml/views/landing_children/language_selection.dart';
 import 'package:lingua_ml/views/translation/translator.dart';
 
 class LandingPage extends StatefulWidget {
@@ -17,10 +20,56 @@ class LandingPage extends StatefulWidget {
 
 class _LnadingPageState extends State<LandingPage> {
   final LandingPageHelper _helper = LandingPageHelper.instance;
-  Future _speak(String languageCode, String text) async {
-    await _helper.flutterTts.setLanguage(languageCode);
-    var result = await _helper.flutterTts.speak(text);
-    // if (result == 1) setState(() => ttsState = TtsState.playing);
+  final SpeechTT _speechHelper = SpeechTT.instance;
+  bool _isSpeaking = false;
+  // Future<void> speak() async {
+  //   await _helper.flutterTts.setLanguage(languageCode);
+  //   await _helper.flutterTts.speak(text);
+  // }
+
+  bool _speechEnabled = false;
+  Future<void> initSpeechState() async {
+    try {
+      var hasSpeech = await _speechHelper.speechToText.initialize(
+        onError: (err) {
+          _speechHelper.errorListener(err, message: (message) {});
+        },
+        onStatus: (stat) {
+          _speechHelper.statusListener(stat, result: (status) {});
+        },
+        debugLogging: true,
+      );
+      if (hasSpeech) {
+        var systemLocale = await _speechHelper.speechToText.systemLocale();
+      }
+      if (!mounted) return;
+
+      setState(() {
+        _speechEnabled = hasSpeech;
+      });
+    } catch (e) {
+      setState(() {
+        Fluttertoast.showToast(
+            msg: "Speech recognition failed: ${e.toString()}");
+        _speechEnabled = false;
+      });
+    }
+  }
+
+  void _stopListening() async {
+    await _speechHelper.speechToText.stop();
+    // setState(() {});
+  }
+
+  Future _speak() async {
+    setState(() {
+      _isSpeaking = true;
+    });
+    await _helper.flutterTts
+        .setLanguage(_helper.chosenLanguageTranslateTo.code);
+    await _helper.flutterTts
+        .speak(_helper.translatedController.text)
+        .whenComplete(() => setState(() => _isSpeaking = false));
   }
 
   bool isPlaying = false;
@@ -44,6 +93,49 @@ class _LnadingPageState extends State<LandingPage> {
     });
   }
 
+  Future<void> anotherTranslator(
+    String text, {
+    required LanguageModel from,
+    required LanguageModel to,
+    required ValueChanged<String> callback,
+  }) async {
+    setState(() {
+      isTranslating = true;
+    });
+    bool isDownloadedTo =
+        await _helper.languageModelService.returnableChecker(to.code);
+    bool isDownloadedFrom =
+        await _helper.languageModelService.returnableChecker(from.code);
+    if (isDownloadedFrom && isDownloadedTo) {
+      /// Translate
+      callback(await _helper.manualTranslate(text, from: from, to: to));
+    } else {
+      if (!isDownloadedFrom) {
+        setState(() {
+          isDownloadingModel = true;
+        });
+        await _helper.languageModelService.downloadModel(from.code);
+      }
+      if (!isDownloadedTo) {
+        setState(() {
+          isDownloadingModel = true;
+        });
+        await _helper.languageModelService.downloadModel(to.code);
+      }
+      setState(() {
+        isDownloadingModel = false;
+      });
+      await Future.delayed(const Duration(milliseconds: 100));
+      callback(
+        await _helper.manualTranslate(text, from: from, to: to).whenComplete(
+              () => setState(() {
+                isTranslating = true;
+              }),
+            ),
+      );
+    }
+  }
+
   void clearData() {
     setState(() {
       imageFile = null;
@@ -52,12 +144,62 @@ class _LnadingPageState extends State<LandingPage> {
     });
   }
 
+  void init() async {
+    if (Platform.isIOS) {
+      await _helper.flutterTts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.ambient,
+          [
+            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers
+          ],
+          IosTextToSpeechAudioMode.voicePrompt);
+    }
+    await initSpeechState();
+  }
+
+  _startListening() async {
+    await _speechHelper.speechToText.listen(
+      onResult: (res) {
+        _speechHelper.resultListener(
+          res,
+          finalResult: (finalResult) async {
+            await anotherTranslator(
+              finalResult,
+              from: _helper.chosenLanguageTranslateFrom,
+              to: _helper.chosenLanguageTranslateTo,
+              callback: (String val) {
+                setState(() {
+                  _helper.translatedController.text = val;
+                });
+              },
+            );
+          },
+          listenedWords: (listenedWords) {
+            print(listenedWords);
+            setState(() {
+              _helper.controller.text = listenedWords;
+            });
+          },
+        );
+      },
+      localeId: _helper.chosenLanguageTranslateFrom.code.replaceAll('-', '_'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _stopListening();
+    super.dispose();
+  }
+
   @override
   void initState() {
     print("INIT");
     _helper.debouncer.obj.listen((String text) async {
       await ttranslate();
     });
+    init();
     // searchOnChange.debounceTime(Duration(seconds: 1)).listen((queryString) {});
     super.initState();
   }
@@ -70,6 +212,69 @@ class _LnadingPageState extends State<LandingPage> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              FloatingActionButton(
+                onPressed: () {
+                  clearData();
+                },
+                backgroundColor: Colors.red,
+                child: const Tooltip(
+                  message: "Clear data",
+                  child: Center(
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              if (_speechEnabled) ...{
+                FloatingActionButton(
+                  onPressed: () {
+                    if (_speechHelper.speechToText.isListening) {
+                      _stopListening();
+                    } else {
+                      _startListening();
+                    }
+                    setState(() {});
+                  },
+                  backgroundColor: Colors.grey.shade100,
+                  child: Center(
+                    child: Icon(
+                      _speechHelper.speechToText.isListening
+                          ? Icons.mic_off_rounded
+                          : Icons.mic_rounded,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              },
+              FloatingActionButton(
+                onPressed: _helper.translatedController.text.isNotEmpty
+                    ? () async {
+                        if (!_isSpeaking) {
+                          await _speak();
+                        } else {
+                          _helper.flutterTts.stop();
+                        }
+                      }
+                    : null,
+                backgroundColor: Colors.grey.shade100,
+                child: Center(
+                  child: Icon(
+                    _isSpeaking ? Icons.volume_mute : Icons.volume_up,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         backgroundColor: Colors.white,
         appBar: AppBar(
           elevation: 0,
@@ -102,225 +307,155 @@ class _LnadingPageState extends State<LandingPage> {
         ),
         body: Stack(
           children: [
-            Scrollbar(
-              controller: _helper.scrollController,
-              child: ListView(
-                controller: _helper.scrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                children: [
-                  SizedBox(
-                    width: size.width,
-                    child: Row(
+            Column(
+              children: [
+                Expanded(
+                  child: Scrollbar(
+                    controller: _helper.scrollController,
+                    child: ListView(
+                      controller: _helper.scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black54),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            padding: const EdgeInsets.only(
-                              left: 10,
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<LanguageModel>(
-                                isExpanded: true,
-                                value: _helper.chosenLanguageTranslateFrom,
-                                items: _helper.dropdownMenuItems
-                                    .map(
-                                      (LanguageModel e) =>
-                                          DropdownMenuItem<LanguageModel>(
-                                        value: e,
-                                        child: Text(
-                                          e.name,
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) async {
-                                  if (val != null) {
-                                    setState(
-                                      () => _helper
-                                          .chosenLanguageTranslateFrom = val,
-                                    );
-                                    await ttranslate();
-                                    // searchOnChange.add(val);
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            final LanguageModel _temp =
-                                _helper.chosenLanguageTranslateFrom;
-                            final String _tempText = _helper.controller.text;
-                            setState(() {
-                              _helper.chosenLanguageTranslateFrom =
-                                  _helper.chosenLanguageTranslateTo;
-                              _helper.chosenLanguageTranslateTo = _temp;
-                              _helper.controller.text =
-                                  _helper.translatedController.text;
-                              _helper.translatedController.text = _tempText;
-                            });
-                            await ttranslate();
+                        LanguageSelectionPage(
+                          hasChanged: (bool b) async {
+                            if (_helper.controller.text.isNotEmpty) {
+                              await ttranslate();
+                            }
                           },
-                          icon: const Icon(Icons.swap_horiz_rounded),
+                          onChangeFrom: (LanguageModel f) async {
+                            await anotherTranslator(
+                              _helper.controller.text,
+                              callback: (String value) {
+                                setState(() {
+                                  _helper.controller.text = value;
+                                });
+                              },
+                              from: f,
+                              to: _helper.chosenLanguageTranslateFrom,
+                            );
+                          },
+                          onChangeTo: (LanguageModel f) async {
+                            await anotherTranslator(
+                              _helper.controller.text,
+                              callback: (String value) {
+                                setState(() {
+                                  _helper.translatedController.text = value;
+                                });
+                              },
+                              from: _helper.chosenLanguageTranslateFrom,
+                              to: _helper.chosenLanguageTranslateTo,
+                            );
+                          },
                         ),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black54),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            padding: const EdgeInsets.only(
-                              left: 10,
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<LanguageModel>(
-                                isExpanded: true,
-                                value: _helper.chosenLanguageTranslateTo,
-                                items: _helper.dropdownMenuItems
-                                    .map(
-                                      (LanguageModel e) =>
-                                          DropdownMenuItem<LanguageModel>(
-                                        value: e,
-                                        child: Text(
-                                          e.name,
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) async {
-                                  if (val != null) {
-                                    setState(
-                                      () => _helper.chosenLanguageTranslateTo =
-                                          val,
-                                    );
-                                    await ttranslate();
-                                  }
-                                },
-                              ),
-                            ),
+                        ImagePickFromFile(
+                          onPickFile: (File pickedFil) =>
+                              setState(() => imageFile = pickedFil),
+                          imageFile: imageFile,
+                          toTranslate: _helper.chosenLanguageTranslateTo,
+                          fromTranslate: _helper.chosenLanguageTranslateFrom,
+                          recognisedText: (RecognisedText? texts) async {
+                            if (texts != null) {
+                              setState(() {
+                                _helper.controller.text = _helper
+                                    .translationService
+                                    .populateFirst(texts.blocks);
+                              });
+                              await ttranslate();
+                            }
+                            setState(() {
+                              recognisedText = texts;
+                            });
+                          },
+                        ),
+                        TranslationPage(
+                          controller: _helper.controller,
+                          translatedController: _helper.translatedController,
+                          onTextChangedToTranslate: (text) {
+                            _helper.debouncer.update(text);
+                          },
+                        ),
+                        const SafeArea(
+                          child: SizedBox(
+                            height: 90,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  ImagePickFromFile(
-                    onPickFile: (File pickedFil) =>
-                        setState(() => imageFile = pickedFil),
-                    imageFile: imageFile,
-                    toTranslate: _helper.chosenLanguageTranslateTo,
-                    fromTranslate: _helper.chosenLanguageTranslateFrom,
-                    recognisedText: (RecognisedText? texts) async {
-                      if (texts != null) {
-                        setState(() {
-                          _helper.controller.text = _helper.translationService
-                              .populateFirst(texts.blocks);
-                        });
-                        await ttranslate();
-                        // String x = await translateIt();
-                        // setState(() {
-                        //   translatedController.text = x;
-                        // });
-                      }
-                      setState(() {
-                        recognisedText = texts;
-                      });
-                    },
-                  ),
-                  TranslationPage(
-                    controller: _helper.controller,
-                    translatedController: _helper.translatedController,
-                    onTextChangedToTranslate: (text) {
-                      _helper.debouncer.update(text);
-                    },
-                    // onPressedSpeak: () {},
-                  ),
-                  // if (recognisedText != null) ...{
-
-                  // },
-                ],
-              ),
+                ),
+              ],
             ),
             // if (imageFile != null || controller.text.isNotEmpty) ...{
-            Positioned(
-              right: 10,
-              bottom: 10,
-              child: SideNavOptions(
-                onClear: () {
-                  clearData();
-                },
-                onPressedTranslate: isTranslating
-                    ? null
-                    : () async {
-                        await ttranslate();
-                      },
-                onPressedSpeak: _helper.translatedController.text.isEmpty
-                    ? null
-                    : () async {
-                        if (Platform.isIOS) {
-                          await _helper.flutterTts.setIosAudioCategory(
-                              IosTextToSpeechAudioCategory.ambient,
-                              [
-                                IosTextToSpeechAudioCategoryOptions
-                                    .allowBluetooth,
-                                IosTextToSpeechAudioCategoryOptions
-                                    .allowBluetoothA2DP,
-                                IosTextToSpeechAudioCategoryOptions
-                                    .mixWithOthers
-                              ],
-                              IosTextToSpeechAudioMode.voicePrompt);
-                        }
-                        String code = "en-US";
-                        switch (_helper.chosenLanguageTranslateTo.code) {
-                          case "es":
-                            code = "es-ES";
-                            break;
-                          case "zh":
-                            code = "zh-CN";
-                            break;
-                          case "fr":
-                            code = "fr-FR";
-                            break;
-                          case "hi":
-                            code = "hi-IN";
-                            break;
-                          case "ja":
-                            code = "ja-JP";
-                            break;
-                          case "ko":
-                            code = "ko-KR";
-                            break;
-                          default:
-                            code = 'en-US';
-                            break;
-                        }
-                        if (!isPlaying) {
-                          setState(() {
-                            isPlaying = true;
-                          });
-                          await _helper.flutterTts.awaitSpeakCompletion(true);
-                          await _speak(code, _helper.translatedController.text);
-                        } else {
-                          _helper.flutterTts.stop();
-                          setState(() {
-                            isPlaying = false;
-                          });
-                        }
-                      },
-              ),
-            ),
+            // Positioned(
+            //   right: 10,
+            //   bottom: 10,
+            //   child: SideNavOptions(
+            //     onClear: () {
+            //       clearData();
+            //     },
+            //     onPressedTranslate: isTranslating
+            //         ? null
+            //         : () async {
+            //             await ttranslate();
+            //           },
+            //     onPressedSpeak: _helper.translatedController.text.isEmpty
+            //         ? null
+            //         : () async {
+            // if (Platform.isIOS) {
+            //   await _helper.flutterTts.setIosAudioCategory(
+            //       IosTextToSpeechAudioCategory.ambient,
+            //       [
+            //         IosTextToSpeechAudioCategoryOptions
+            //             .allowBluetooth,
+            //         IosTextToSpeechAudioCategoryOptions
+            //             .allowBluetoothA2DP,
+            //         IosTextToSpeechAudioCategoryOptions
+            //             .mixWithOthers
+            //       ],
+            //       IosTextToSpeechAudioMode.voicePrompt);
+            // }
+            //             String code = "en-US";
+            //             switch (_helper.chosenLanguageTranslateTo.code) {
+            //               case "es":
+            //                 code = "es-ES";
+            //                 break;
+            //               case "zh":
+            //                 code = "zh-CN";
+            //                 break;
+            //               case "fr":
+            //                 code = "fr-FR";
+            //                 break;
+            //               case "hi":
+            //                 code = "hi-IN";
+            //                 break;
+            //               case "ja":
+            //                 code = "ja-JP";
+            //                 break;
+            //               case "ko":
+            //                 code = "ko-KR";
+            //                 break;
+            //               default:
+            //                 code = 'en-US';
+            //                 break;
+            //             }
+            //             if (!isPlaying) {
+            //               setState(() {
+            //                 isPlaying = true;
+            //               });
+            //               await _helper.flutterTts.awaitSpeakCompletion(true);
+            //               await _speak(code, _helper.translatedController.text);
+            //             } else {
+            //               _helper.flutterTts.stop();
+            //               setState(() {
+            //                 isPlaying = false;
+            //               });
+            //             }
+            //           },
+            //   ),
+            // ),
             isDownloadingModel
                 ? Container(
                     width: size.width,

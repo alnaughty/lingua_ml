@@ -44,4 +44,13 @@ class LandingPageHelper {
     //   _translatedController.text = translatedText;
     // });
   }
+
+  Future<String> manualTranslate(String text,
+      {required LanguageModel from, required LanguageModel to}) async {
+    return await translationService.init(
+      text,
+      source: from.translateTo,
+      target: to.translateTo,
+    );
+  }
 }
