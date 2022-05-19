@@ -8,10 +8,14 @@ import 'painters/text_detector_painter.dart';
 
 class TextDetectorV2View extends StatefulWidget {
   const TextDetectorV2View(
-      {Key? key, required this.model, required this.toModel})
+      {Key? key,
+      required this.model,
+      required this.toModel,
+      required this.callback})
       : super(key: key);
   final LanguageModel model;
   final LanguageModel toModel;
+  final ValueChanged<String> callback;
   @override
   _TextDetectorViewV2State createState() => _TextDetectorViewV2State();
 }
@@ -111,6 +115,7 @@ class _TextDetectorViewV2State extends State<TextDetectorV2View> {
             title: 'Live Stream',
             painterData: painterData,
             customPaint: customPaint,
+            callback: widget.callback,
             onImage: (inputImage) {
               if (mounted) {
                 processImage(inputImage);

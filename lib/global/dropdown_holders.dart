@@ -50,5 +50,10 @@ class DropdownHolders {
       code: "es",
       translateTo: TranslateLanguage.SPANISH,
     ),
+    const LanguageModel(
+      name: "Waray",
+      code: "wr",
+      translateTo: "wr",
+    )
   ];
 }

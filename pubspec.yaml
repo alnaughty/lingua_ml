@@ -23,7 +23,10 @@ dependencies:
   firebase_core: ^1.14.1
   google_ml_kit: ^0.7.3
   speech_to_text: ^5.4.3
-
+  sentence_boundary:
+    git: "https://github.com/alnaughty/sentence_boundary"
+  waray_translator:
+    git: "https://github.com/alnaughty/waray_translator2.git"
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -33,6 +36,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/
     - assets/images/
   fonts:
     - family: DEFAULT

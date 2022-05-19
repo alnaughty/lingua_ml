@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:waray_translator/waray_translator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -6,10 +7,12 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:lingua_ml/helper/landing_page_helper.dart';
 import 'package:lingua_ml/models/language_model.dart';
 import 'package:lingua_ml/services/speechtt_service.dart';
+import 'package:lingua_ml/views/detectors/vsion_detector_views/text_detectorv2_view.dart';
 import 'package:lingua_ml/views/image_detector/image_pick_from_file.dart';
 import 'package:lingua_ml/views/image_detector/side_nav_options.dart';
 import 'package:lingua_ml/views/landing_children/language_selection.dart';
 import 'package:lingua_ml/views/translation/translator.dart';
+import 'package:page_transition/page_transition.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -21,6 +24,8 @@ class LandingPage extends StatefulWidget {
 class _LnadingPageState extends State<LandingPage> {
   final LandingPageHelper _helper = LandingPageHelper.instance;
   final SpeechTT _speechHelper = SpeechTT.instance;
+  late final WarayTranslator engWarTranslator;
+
   bool _isSpeaking = false;
   // Future<void> speak() async {
   //   await _helper.flutterTts.setLanguage(languageCode);
@@ -76,21 +81,30 @@ class _LnadingPageState extends State<LandingPage> {
   bool isDownloadingModel = false;
   bool isTranslating = false;
   Future<void> ttranslate() async {
-    setState(() {
-      isTranslating = true;
-    });
-    _helper.languageModelService.checkIsDownloaded(
-        _helper.chosenLanguageTranslateTo.code, isChecking: (bool f) async {
+    if (_helper.chosenLanguageTranslateTo.code != "wr") {
       setState(() {
-        isDownloadingModel = !f;
+        isTranslating = true;
       });
-    });
+      _helper.languageModelService.checkIsDownloaded(
+          _helper.chosenLanguageTranslateTo.code, isChecking: (bool f) async {
+        setState(() {
+          isDownloadingModel = !f;
+        });
+      });
 
-    String x = await _helper.translateIt();
-    setState(() {
-      _helper.translatedController.text = x;
-      isTranslating = false;
-    });
+      String x = await _helper.translateIt();
+      setState(() {
+        _helper.translatedController.text = x;
+        isTranslating = false;
+      });
+    } else {
+      String translation =
+          await engWarTranslator.translate(_helper.controller.text);
+      setState(() {
+        _helper.translatedController.text = translation;
+      });
+      print("TRANSLATE!!! $translation");
+    }
   }
 
   Future<void> anotherTranslator(
@@ -99,40 +113,49 @@ class _LnadingPageState extends State<LandingPage> {
     required LanguageModel to,
     required ValueChanged<String> callback,
   }) async {
-    setState(() {
-      isTranslating = true;
-    });
-    bool isDownloadedTo =
-        await _helper.languageModelService.returnableChecker(to.code);
-    bool isDownloadedFrom =
-        await _helper.languageModelService.returnableChecker(from.code);
-    if (isDownloadedFrom && isDownloadedTo) {
-      /// Translate
-      callback(await _helper.manualTranslate(text, from: from, to: to));
-    } else {
-      if (!isDownloadedFrom) {
-        setState(() {
-          isDownloadingModel = true;
-        });
-        await _helper.languageModelService.downloadModel(from.code);
-      }
-      if (!isDownloadedTo) {
-        setState(() {
-          isDownloadingModel = true;
-        });
-        await _helper.languageModelService.downloadModel(to.code);
-      }
+    if (to.code != 'wr') {
       setState(() {
-        isDownloadingModel = false;
+        isTranslating = true;
       });
-      await Future.delayed(const Duration(milliseconds: 100));
-      callback(
-        await _helper.manualTranslate(text, from: from, to: to).whenComplete(
-              () => setState(() {
-                isTranslating = true;
-              }),
-            ),
-      );
+      bool isDownloadedTo =
+          await _helper.languageModelService.returnableChecker(to.code);
+      bool isDownloadedFrom =
+          await _helper.languageModelService.returnableChecker(from.code);
+      if (isDownloadedFrom && isDownloadedTo) {
+        /// Translate
+        callback(await _helper.manualTranslate(text, from: from, to: to));
+      } else {
+        if (!isDownloadedFrom) {
+          setState(() {
+            isDownloadingModel = true;
+          });
+          await _helper.languageModelService.downloadModel(from.code);
+        }
+        if (!isDownloadedTo) {
+          setState(() {
+            isDownloadingModel = true;
+          });
+          await _helper.languageModelService.downloadModel(to.code);
+        }
+        setState(() {
+          isDownloadingModel = false;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        callback(
+          await _helper.manualTranslate(text, from: from, to: to).whenComplete(
+                () => setState(() {
+                  isTranslating = true;
+                }),
+              ),
+        );
+      }
+    } else {
+      String translation =
+          await engWarTranslator.translate(_helper.controller.text);
+      setState(() {
+        _helper.translatedController.text = translation;
+      });
+      print("TRANSLATE!!! $translation");
     }
   }
 
@@ -145,6 +168,7 @@ class _LnadingPageState extends State<LandingPage> {
   }
 
   void init() async {
+    engWarTranslator = await WarayTranslator.instance;
     if (Platform.isIOS) {
       await _helper.flutterTts.setIosAudioCategory(
           IosTextToSpeechAudioCategory.ambient,
@@ -287,14 +311,58 @@ class _LnadingPageState extends State<LandingPage> {
               tooltip: "Live Stream",
               onPressed: () {
                 if (Platform.isAndroid) {
-                  Navigator.pushNamed(
+                  Navigator.push(
                     context,
-                    "/text_detector_v2",
-                    arguments: <LanguageModel>[
-                      _helper.chosenLanguageTranslateFrom,
-                      _helper.chosenLanguageTranslateTo,
-                    ],
+                    PageTransition(
+                      child: TextDetectorV2View(
+                        model: _helper.chosenLanguageTranslateFrom,
+                        toModel: _helper.chosenLanguageTranslateTo,
+                        callback: (String callback) async {
+                          print("CALLBACK");
+                          setState(() {
+                            _helper.controller.text = callback;
+                          });
+                          await anotherTranslator(
+                            _helper.controller.text,
+                            callback: (String value) {
+                              setState(() {
+                                _helper.translatedController.text = value;
+                              });
+                            },
+                            from: _helper.chosenLanguageTranslateFrom,
+                            to: _helper.chosenLanguageTranslateTo,
+                          );
+                        },
+                      ),
+                      type: PageTransitionType.topToBottom,
+                    ),
                   );
+                  // Navigator.pushNamed(
+                  //   context,
+                  //   "/text_detector_v2",
+                  //   arguments: [
+                  // (String callback) async {
+                  //   print("CALLBACK");
+                  //   setState(() {
+                  //     _helper.controller.text = callback;
+                  //   });
+                  //   await anotherTranslator(
+                  //     _helper.controller.text,
+                  //     callback: (String value) {
+                  //       setState(() {
+                  //         _helper.translatedController.text = value;
+                  //       });
+                  //     },
+                  //     from: _helper.chosenLanguageTranslateFrom,
+                  //     to: _helper.chosenLanguageTranslateTo,
+                  //   );
+                  // },
+                  //     <LanguageModel>[
+                  //       _helper.chosenLanguageTranslateFrom,
+                  //       _helper.chosenLanguageTranslateTo,
+                  //     ]
+                  //   ],
+                  // );
                 } else {
                   Navigator.pushNamed(context, "/text_detector");
                 }

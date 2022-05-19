@@ -42,12 +42,14 @@ class LinguaApp extends StatelessWidget {
               reverseDuration: const Duration(milliseconds: 500),
             );
           case "/text_detector_v2":
-            List<LanguageModel> _args =
-                settings.arguments as List<LanguageModel>;
+            List _args = settings.arguments as List;
+            List<LanguageModel> model = _args[1] as List<LanguageModel>;
+            ValueChanged<String> ff = _args[0];
             return PageTransition(
               child: TextDetectorV2View(
-                model: _args[0],
-                toModel: _args[1],
+                model: model[0],
+                toModel: model[1],
+                callback: ff,
               ),
               type: PageTransitionType.fade,
               duration: const Duration(milliseconds: 500),

@@ -19,10 +19,12 @@ class CameraView extends StatefulWidget {
       required this.customPaint,
       required this.onImage,
       this.painterData,
+      this.callback,
       this.initialDirection = CameraLensDirection.back})
       : super(key: key);
   final TextPainterData? painterData;
   final String title;
+  final ValueChanged<String>? callback;
   final CustomPaint? customPaint;
   final Function(InputImage inputImage) onImage;
   final CameraLensDirection initialDirection;
@@ -127,11 +129,15 @@ class _CameraViewState extends State<CameraView> {
       if ((offset.dy >= tr.dy && offset.dy <= bl.dy) &&
           (offset.dx >= bl.dx && offset.dx <= tr.dx)) {
         print(textBlock.text);
-        Navigator.pushNamed(
-          context,
-          "/live_stream_translate_page",
-          arguments: textBlock.text,
-        );
+        Navigator.of(context).pop();
+        if (widget.callback != null) {
+          widget.callback!(textBlock.text);
+        }
+        // Navigator.pushNamed(
+        //   context,
+        //   "/live_stream_translate_page",
+        //   arguments: textBlock.text,
+        // );
         break;
       }
     }

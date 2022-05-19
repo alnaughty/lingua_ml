@@ -1,0 +1,88 @@
+Dog.	Ayam.
+Puppy.	Tiyo.
+Cat.	Misay.
+Kitten.	Misay.
+Cow.	Baka.
+Calf.	Baka.
+Chicken.	Manok.
+Rooster.	Pambulang.
+Hen.	Ugang.
+Chick.	Piso.
+Rat.	Yatot.
+Mice.	Mga yatot.
+Mouse.	Yatot.
+Lizard.	Tagoto.
+Duck.	Pato.
+Geese.	Mga pato.
+Goose.	Pato.
+Hawk.	Sikop.
+Eagle.	Agila.
+Bird.	Tamsi.
+Deer.	Bugsok.
+Snake.	Halas.
+Python.	Sawa.
+Boa.	Sawa.
+Cobra.	Ibingan.
+Monkey.	Unggoy.
+Macaque.	Ulot.
+Fish.	Isda.
+Frog.	Kachapa.
+Elephant.	Elepante.
+Goat.	Kanding.
+Turtle.	Pagong.
+Tortoise.	Pagong.
+Sea Turtle.	Pawikan.
+Bat.	Paniki.
+Eel.	Haru-an.
+Murray eel.	Ubod.
+Buffalo.	Karabaw.
+Water Buffalo.	Karabaw.
+Shark.	Pating.
+Sheep.	Kanding.
+Whale.	Balyena.
+Whale shark.	Butanding.
+Gecko.	Tuko.
+Cuttlefish.	Bagolan.
+Cuttle fish.	Bagolan.
+Squid.	Nu-os.
+Scallop.	Tipay.
+Crocodile.	Bu-aya.
+Alligator.	Bu-aya.
+Snail.	Kuhol.
+Crab.	Masag.
+Mud crab.	Alimango.
+Housefly.	Langaw.
+Houseflies.	Mga langaw.
+Fly.	Lupad.
+Fly!	Lupad!
+Mosquito.	Lamok.
+Spider.	Lawa.
+Firefly.	Bukatkat.
+Fireflies.	Mga bukatkat.
+Bull.	Toro.
+Viper.	Halas.
+Worm.	Ulod.
+Turkey.	Pabo.
+Palm civet cat.	Garong.
+Pig.	Baboy.
+Pork.	Karne san baboy.
+Beef.	Karne san baka.
+Meat.	Karne.
+Milkfish.	Bangus.
+Cockroach.	Bangka.
+Roach.	Bangka.
+Cockroaches.	Mga bangka.
+Roaches.	Mga bangka.
+Piglet.	Pasi.
+Grasshopper.	Apan.
+Dragonfly.	Alidong-dong.
+Ant.	Harumigas.
+Snapping ant.	Hamtik.
+Bee.	Bubuyog.
+Coconut.	Lubi.
+Business.	Negosyo.
+Infrastructure.	Imprastraktura.
+City.	Syudad.
+Place.	Lugar.
+Coffee.	Kape.
+
