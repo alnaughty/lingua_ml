@@ -183,7 +183,7 @@ packages:
       name: http_parser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.0"
+    version: "4.0.1"
   image_picker:
     dependency: "direct main"
     description:
@@ -211,7 +211,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.5+4"
+    version: "0.8.5+5"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -490,7 +490,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "18ca20f0d87c3feb2922b520acde99b5f7fd6330"
+      resolved-ref: "3a4587cbd1f181c57699c392f5b64e46e4ecfa1a"
       url: "https://github.com/alnaughty/waray_translator2.git"
     source: git
     version: "0.0.1"

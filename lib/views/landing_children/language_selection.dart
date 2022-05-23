@@ -40,7 +40,6 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
                     isExpanded: true,
                     value: _helper.chosenLanguageTranslateFrom,
                     items: _helper.dropdownMenuItems
-                        .where((element) => element.code != "wr")
                         .map(
                           (LanguageModel e) => DropdownMenuItem<LanguageModel>(
                             value: e,
@@ -71,23 +70,19 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
               ),
             ),
             IconButton(
-              onPressed: _helper.chosenLanguageTranslateTo.code == "wr"
-                  ? null
-                  : () async {
-                      final LanguageModel _temp =
-                          _helper.chosenLanguageTranslateFrom;
-                      final String _tempText = _helper.controller.text;
-                      setState(() {
-                        _helper.chosenLanguageTranslateFrom =
-                            _helper.chosenLanguageTranslateTo;
-                        _helper.chosenLanguageTranslateTo = _temp;
-                        _helper.controller.text =
-                            _helper.translatedController.text;
-                        _helper.translatedController.text = _tempText;
-                      });
-                      widget.hasChanged(true);
-                      // await ttranslate();
-                    },
+              onPressed: () async {
+                final LanguageModel _temp = _helper.chosenLanguageTranslateFrom;
+                final String _tempText = _helper.controller.text;
+                setState(() {
+                  _helper.chosenLanguageTranslateFrom =
+                      _helper.chosenLanguageTranslateTo;
+                  _helper.chosenLanguageTranslateTo = _temp;
+                  _helper.controller.text = _helper.translatedController.text;
+                  _helper.translatedController.text = _tempText;
+                });
+                widget.hasChanged(true);
+                // await ttranslate();
+              },
               icon: const Icon(Icons.swap_horiz_rounded),
             ),
             Expanded(

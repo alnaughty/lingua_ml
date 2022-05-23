@@ -82,6 +82,18 @@ class _LnadingPageState extends State<LandingPage> {
   bool isTranslating = false;
   Future<void> ttranslate() async {
     if (_helper.chosenLanguageTranslateTo.code != "wr") {
+      if (_helper.chosenLanguageTranslateTo.code == "en" &&
+          _helper.chosenLanguageTranslateFrom.code == "wr") {
+        String translation = await engWarTranslator.translate(
+            _helper.controller.text,
+            _helper.chosenLanguageTranslateTo.code == "en" &&
+                _helper.chosenLanguageTranslateFrom.code == "wr");
+        setState(() {
+          _helper.translatedController.text = translation;
+        });
+        print("TRANSLATE!!! $translation");
+        return;
+      }
       setState(() {
         isTranslating = true;
       });
@@ -98,8 +110,10 @@ class _LnadingPageState extends State<LandingPage> {
         isTranslating = false;
       });
     } else {
-      String translation =
-          await engWarTranslator.translate(_helper.controller.text);
+      String translation = await engWarTranslator.translate(
+          _helper.controller.text,
+          _helper.chosenLanguageTranslateTo.code == "en" &&
+              _helper.chosenLanguageTranslateFrom.code == "wr");
       setState(() {
         _helper.translatedController.text = translation;
       });
@@ -114,6 +128,17 @@ class _LnadingPageState extends State<LandingPage> {
     required ValueChanged<String> callback,
   }) async {
     if (to.code != 'wr') {
+      if (to.code == "en" && from.code == "wr") {
+        String translation = await engWarTranslator.translate(
+            _helper.controller.text,
+            _helper.chosenLanguageTranslateTo.code == "en" &&
+                _helper.chosenLanguageTranslateFrom.code == "wr");
+        setState(() {
+          _helper.translatedController.text = translation;
+        });
+        print("TRANSLATE!!! $translation");
+        return;
+      }
       setState(() {
         isTranslating = true;
       });
@@ -150,8 +175,10 @@ class _LnadingPageState extends State<LandingPage> {
         );
       }
     } else {
-      String translation =
-          await engWarTranslator.translate(_helper.controller.text);
+      String translation = await engWarTranslator.translate(
+          _helper.controller.text,
+          _helper.chosenLanguageTranslateTo.code == "en" &&
+              _helper.chosenLanguageTranslateFrom.code == "wr");
       setState(() {
         _helper.translatedController.text = translation;
       });
